@@ -1,0 +1,195 @@
+#初始化，寄存器清零
+sub		$t0, $t0, $t0		    # 清零
+sub		$t1, $t1, $t1		    # 清零
+sub		$t2, $t2, $t2		    # 清零
+sub		$t3, $t3, $t3		    # 清零
+sub		$t4, $t4, $t4		    # 清零
+sub		$t5, $t5, $t5		    # 清零
+
+#中键轮询
+polling: 
+    lw		$s0, 65524($zero)	# 取中键开关数据到寄存器$s0，按键键地址65524 (3’b0, btnr, btnl, btnd, btnu, btnc)
+    andi    $s0, $s0, 1         # 保留btnc按键，其他消去
+    bne		$zero, $s0, begin	# if $zero != $s0 then begin
+    j		polling             # jump to polling
+#老虎机开始转动
+begin:
+    # 三个滚筒，0-7，速度不一样
+    # 首先让二极管显示
+    jal		show				# jump to show and save position to $ra
+    sll     $zero, $zero, 0     # NOP
+    # t0->100,t1->150,t2->200 速度差，处理滚筒转动
+    jal		change				# jump to change and save position to $ra, 处理滚筒改变
+    sll     $zero, $zero, 0     # NOP
+    addi	$t0, $t0, 1			# $t0 = $t0 + 1
+    addi	$t1, $t1, 1			# $t1 = $t1 + 1
+    addi	$t2, $t2, 1			# $t2 = $t2 + 1
+    # 判断按钮电平
+    lw		$s0, 65524($zero)	# 取中键开关数据到寄存器$s0，按键键地址65524 (3’b0, btnr, btnl, btnd, btnu, btnc)
+    andi    $s0, $s0, 1         # 保留btnc按键，其他消去
+    beq		$zero, $s0, stop	# if $zero == $s0 then begin, 停止处理系统
+    j		begin				# jump to begin, 重复执行
+#停止转动处理
+stop:###
+    addi	$s1, $zero, 1000	    # $s1 = $zero + 1000
+    addi	$s2, $zero, 1500		# $s2 = $zero + 1500
+    addi	$s3, $zero, 2000		# $s3 = $zero + 2000
+    stop_begin:
+        jal		show				# jump to show and save position to $ra
+        sll     $zero, $zero, 0     # NOP
+        # s1->1000,s2->1500,s3->2000 速度差，停止延时
+        jal		change				# jump to change and save position to $ra, 处理滚筒改变
+        sll     $zero, $zero, 0     # NOP
+
+        bne		$s1, $zero, stop_first	# if $s1 != $zero then stop_first
+        bne		$s2, $zero, stop_second	# if $s2 != $zero then stop_second
+        bne		$s3, $zero, stop_third	# if $s3 != $zero then stop_third
+
+        #都相等，则结束
+        j		stop_end				# jump to stop_end
+        
+        
+    stop_first:
+        addi	$t0, $t0, 1		        # $t0 = $t0 + 1
+        addi	$s1, $s1, -1			# $s1 = $s1 + -1
+    stop_second:
+        addi	$t1, $t1, 1		        # $t1 = $t1 + 1
+        addi	$s2, $s2, -1			# $s2 = $s2 + -1
+    stop_third:
+        addi	$t2, $t2, 1		        # $t2 = $t2 + 1
+        addi	$s3, $s3, -1			# $s3 = $s3 + -1
+        j		stop_begin				# jump to stop_begin
+    stop_end:
+        sll     $zero, $zero, 0         # NOP, 准备胜利处理
+#胜利处理
+win:
+    bne		$t3, $t4, win_not_same	# if $t3 != $t4 then target, 第一个数和第二个数
+    bne		$t3, $t5, win_not_same	# if $t3 != $t4 then target, 第一个数和第三个数
+    #说明相同，指示灯闪烁
+    j		flash					# jump to flash
+    win_not_same:
+        #不相同
+        sll     $zero, $zero, 0     # NOP
+        j		polling             # jump to polling, 等待再次被按下
+#滚筒改变控制
+change:
+    addi	$s1, $zero, 100			# $s1 = $zero + 100
+    addi	$s2, $zero, 150			# $s2 = $zero + 150
+    addi	$s3, $zero, 200			# $s3 = $zero + 200
+    change_begin:
+        beq		$t0, $s1, change_first	# if $t0 == $s1 then change_first
+        beq		$t1, $s2, change_second	# if $t1 == $s2 then change_second
+        beq		$t2, $s3, change_third	# if $t0 == $s3 then change_third
+
+        change_out:
+            jr		$ra					# jump to $ra
+
+    change_first:
+        sub		$t0, $t0, $t0		 # 清零
+        addi	$t3, $t3, 1			 # $t3 = $t3 + 1
+        j		change_begin		 # jump to change_begin
+    change_second:
+        sub		$t1, $t1, $t1		 # 清零
+        addi	$t4, $t4, 1			 # $t4 = $t4 + 1
+        j		change_begin		 # jump to change_begin
+    change_third:
+        sub		$t2, $t2, $t2		 # 清零
+        addi	$t5, $t5, 1			 # $t5 = $t5 + 1
+        j		change_begin		 # jump to change_begin
+        
+#数码管显示处理
+show:
+    addi	$s1, $zero, 8			# $s1 = $zero + 8, 3b'1000
+    addi	$s5, $zero, 1			# $s5 = $zero + 1, 3b'0001
+    #$s1 片选 $s2 段选;$s3 暂存数字,$s4 比较大小
+    show_begin:
+        srl     $s1, $s1, 1         # 逻辑右移一位，做片选信号
+        # 选择片选
+        addi	$s4, $zero, 1			# $s4 = $zero + 1
+        beq		$s1, $s4, show_select1	# if $s1 == $s4 then show_select1 s1-3b'0001
+        addi	$s4, $zero, 2			# $s4 = $zero + 2
+        beq		$s1, $s4, show_select2	# if $s1 == $s4 then show_select2 s1-3b'0010
+        addi	$s4, $zero, 4			# $s4 = $zero + 4
+        beq		$s1, $s4, show_select3	# if $s1 == $s4 then show_select3 s1-3b'0100
+
+        show_select1:
+            add		$s3, $zero, $t0		# $s3 = $zero + $t0
+            j		show_select_end		# jump to show_select3
+        show_select2:
+            add		$s3, $zero, $t1		# $s3 = $zero + $t1
+            j		show_select_end		# jump to show_select3
+        show_select3:
+            add		$s3, $zero, $t2		# $s3 = $zero + $t2
+        show_select_end:
+                    
+        # 选择段选信号
+        addi	$s4, $zero, 0		# $s4 = $zero + 0
+        beq		$s3, $s4, show_0	# if $s3 == $s4 then show_0 s4-0
+        addi	$s4, $zero, 1		# $s4 = $zero + 1
+        beq		$s3, $s4, show_1	# if $s3 == $s4 then show_1 s4-1
+        addi	$s4, $zero, 2		# $s4 = $zero + 2
+        beq		$s3, $s4, show_2	# if $s3 == $s4 then show_2 s4-2
+        addi	$s4, $zero, 3		# $s4 = $zero + 3
+        beq		$s3, $s4, show_3	# if $s3 == $s4 then show_3 s4-3
+        addi	$s4, $zero, 4		# $s4 = $zero + 4
+        beq		$s3, $s4, show_4	# if $s3 == $s4 then show_4 s4-4
+        addi	$s4, $zero, 5		# $s4 = $zero + 5
+        beq		$s3, $s4, show_5	# if $s3 == $s4 then show_5 s4-5
+        addi	$s4, $zero, 6		# $s4 = $zero + 6
+        beq		$s3, $s4, show_6	# if $s3 == $s4 then show_6 s4-6
+        addi	$s4, $zero, 7		# $s4 = $zero + 7
+        beq		$s3, $s4, show_7	# if $s3 == $s4 then show_7 s4-7 
+
+    show_0:
+        addi    $s2, $zero, 0xfc    #段选信号-8b'11111100
+        j		show_out			# jump to show_out
+    show_1:
+        addi    $s2, $zero, 0x60    #段选信号-8b'01100000
+        j		show_out			# jump to show_out
+    show_2:
+        addi    $s2, $zero, 0xda    #段选信号-8b'11011010
+        j		show_out			# jump to show_out
+    show_3:
+        addi    $s2, $zero, 0xf2    #段选信号-8b'11110010
+        j		show_out			# jump to show_out
+    show_4:
+        addi    $s2, $zero, 0x66    #段选信号-8b'01100110
+        j		show_out			# jump to show_out
+    show_5:
+        addi    $s2, $zero, 0xb6    #段选信号-8b'10110110
+        j		show_out			# jump to show_out
+    show_6:
+        addi    $s2, $zero, 0xbe    #段选信号-8b'10111110
+        j		show_out			# jump to show_out
+    show_7:
+        addi    $s2, $zero, 0xe0    #段选信号-8b'11100000
+        j		show_out			# jump to show_out
+
+    show_out:
+        sb		$s2, 0xfff8($zero)	    # 写段选       
+        sb		$s1, 0xfff9($s1)	    # 写片选
+        bne		$s1, $s5, show_begin	# if $s1 != $s5 then show_begin
+
+    show_end:
+        jr		$ra					    # jump to $ra
+
+#二极管闪烁
+flash:
+    #跑马灯方式
+    addi    $s2, $zero, 5           # 跑马次数
+    addi    $s3, $zero, 100         # 时间间隔
+    addi    $s5, $zero, 1           # 跑马灯控制
+    flash_run:
+        sh		$s5, 0xfff0($zero)	    # 写灯信号
+        addi	$s3, $s3, -1		    # $s3 = $s3 - 1 时间控制
+        jal		show				    # jump to show and save position to $ra
+        sll     $zero, $zero, 0         # NOP
+        bne		$s3, $zero, flash_run	# if $s3 != $zero then flash_run
+        addi    $s3, $zero, 100         # 时间间隔恢复
+        sll     $s5, $s5, 1             # 逻辑左移1位
+        bne		$s5, $zero, flash_run	# if $s5 != $sero then flash_run, 控制移动一次, 灯跑一遍
+        addi    $s5, $zero, 1           # 跑马灯恢复
+        addi	$s2, $s2, -1		    # $s2 = $s2 - 1 次数控制
+        bne		$s2, $zero, flash_run	# if $s2 != $zero then flash_run
+    # 结束走马灯
+    j		polling             # jump to polling, 等待再次被按下

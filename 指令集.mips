@@ -1,0 +1,223 @@
+add     0x00/6 rs/5 rt/5 rd/5 0/5       0x20/6   
+andi    0x0c/6 rs/5 rt/5 imme/16
+addi    0x08/6 rs/5 rt/5 imme/16
+addu    0x00/6 rs/5 rt/5 rd/5 0/5       0x21/6   *
+beq     0x04/6 rs/5 rt/5 offset/16
+bne     0x05/6 rs/5 rt/5 offset/16
+j       0x02/6 target/26
+jal     0x03/6 target/26
+jr      0x00/6 rs/5 0/15                0x08/6
+lw      0x23/6 rs/5 rt/5 offset/16
+lui     0x0f/6 rs/5 rt/5 imme/16
+sll     0x00/6 0/5 rt/5 rd/5 shamt/5    0x00/6
+sub     0x00/6 rs/5 rt/5 rd/5 0/5       0x22/6
+srl     0x00/6 0/5 rt/5 rd/5 shamt/5    0x02/6
+sb      0x28/6 rs/5 rt/5 offset/16
+sh      0x29/6 rs/5 rt/5 offset/16
+
+add
+FE  
+ID
+EX
+    src1mux=1
+    src2mux=0
+    ALUcout=add <=ALUop+Is[5:0]
+WR
+    regmux=1
+    wdmux= 0
+    regwrite=1
+
+andi
+FE
+ID
+EX
+    src1mux=1
+    src2mux=2
+    ALUcout=and
+WR
+    regmux=0
+    wdmux=0
+    regwrite=1
+
+addi
+FE
+ID
+EX
+    src1mux=1
+    src2mux=2
+    ALUcout=add
+WR
+    regmux=0
+    wdmux=0
+    regwrite=1
+
+addu*
+FE
+ID
+EX
+    src1mux=1
+    src2mux=0
+    ALUcout=add<=ALUop+Is[5:0]
+WR
+    regmux=1
+    wdmux=0
+    regwrite=1 
+
+beq   
+FE
+ID
+EX
+    srcmux1=0
+    srcmux2=3
+    ALUcout=add
+WEX
+    src1mux=1
+    src2mux=0
+    ALUcout=sub
+    pcmux=1
+    pcwritecond=1
+
+bne
+FE
+ID
+EX
+    srcmux1=0
+    srcmux2=3
+    ALUcout=add
+WEX
+    src1mux=1
+    src2mux=0
+    pcbnecond=1//添加的反相器工作
+    ALUcout=sub
+    pcmux=1
+    pcwritecond=1
+
+j
+FE
+ID
+EX
+    pcmux=2
+    pcwrite=1
+
+jal
+FE
+ID
+EX
+    //caculate 
+    src1mux=0
+    src2mux=1
+    ALU = add
+    //send to pc
+    pcmux=2
+    pcwrite=1
+    
+WR
+    //save to $31
+    regmux=2
+    wdmux=0
+    regwrite=1
+
+jr
+FE
+ID
+EX
+    src1mux=1
+    src2mux=0
+    pcmux=0
+    pcwrite=1
+    ALUcout=add<=ALUop+Is[5:0]
+
+lw
+FE
+ID
+EX
+    src1mux=1
+    src2mux=2
+    ALUcout=add
+WR
+    adrmux=1
+    memread=1
+WREX
+    wdmux=1
+    regmux=0
+
+lui
+FE
+ID
+EX
+    src1mux=1
+    ALUcout=<<<16
+WR 
+    wdmux=0
+    regmux=1
+    regwrite=1
+
+sll
+FE
+ID
+EX
+    src1mux=3
+    src2mux=0
+    ALUcout=sll<=ALUop+Is,<<<A
+WR
+    wdmux=0
+    regmux=1
+
+sub
+FE
+ID
+EX
+    src1mux=1
+    src2mux=0
+    ALUcout=sub<=ALUop+Is
+WR
+    wdmux=0
+    regmux=1
+    regwrite=1
+
+srl
+FE
+ID
+EX
+    src1mux=3
+    src2mux=0
+    ALUcout=srl<=ALUop+Is,>>>A
+WR
+    wdmux=0
+    regmux=1
+    regwrite=1
+
+sb
+FE
+ID
+EX
+    src1mux=1
+    src2mux=2
+    ALUcout=add
+WR
+    adrmux=1
+    mmrselect=2
+
+sh
+FE
+ID
+EX
+    src1mux=1
+    src2mux=2
+    ALUcout=add
+WR
+    adrmux=1
+    mmrselect=1
+
+or 0x00/6 rs/5 rt/5 rd/5 0x00/5 0x25/6
+FE
+ID
+EX
+    src1mux=1
+    src2mux=0
+    ALUcout=sub<=ALUop+Is
+WR
+    wdmux=0
+    regmux=1
+    regwrite=1
+

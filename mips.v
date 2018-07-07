@@ -356,7 +356,7 @@ module alucontrol(input      [2:0] aluop,
                      6'b100010: alucont <= 3'b110; // subtract (for sub)
                      6'b000000: alucont <= 3'b001; // sll
                      6'b000010: alucont <= 3'b011; // srl
-                     6'b001001: 
+                     6'b001000: 
                      begin 
                         alucont <= 3'b010;    // jr only add
                         pcwritefromaluc <= 1; // pc write!

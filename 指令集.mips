@@ -1,12 +1,12 @@
-add     0x00/6 rs/5 rt/5 rd/5 0/5       0x20/6   
+√add     0x00/6 rs/5 rt/5 rd/5 0/5       0x20/6   
 andi    0x0c/6 rs/5 rt/5 imme/16
-addi    0x08/6 rs/5 rt/5 imme/16
+√addi    0x08/6 rs/5 rt/5 imme/16
 addu    0x00/6 rs/5 rt/5 rd/5 0/5       0x21/6   *
 beq     0x04/6 rs/5 rt/5 offset/16
 bne     0x05/6 rs/5 rt/5 offset/16
-j       0x02/6 target/26
-jal     0x03/6 target/26
-jr      0x00/6 rs/5 0/15                0x08/6
+√j       0x02/6 target/26
+√jal     0x03/6 target/26
+√jr      0x00/6 rs/5 0/15                0x08/6
 lw      0x23/6 rs/5 rt/5 offset/16
 lui     0x0f/6 rs/5 rt/5 imme/16
 sll     0x00/6 0/5 rt/5 rd/5 shamt/5    0x00/6

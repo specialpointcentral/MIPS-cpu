@@ -3,8 +3,9 @@
 // mips.v
 // Model of subset of MIPS processor described
 // modified by spc
-// version: v1.2
-// time: 2018/07/06
+// version: v2.0
+// Create time: 2018/07/06
+// Latest edit time: 2018/07/08
 //-------------------------------------------------------
 
 // top level design for testing

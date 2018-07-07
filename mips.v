@@ -361,7 +361,7 @@ module alucontrol(input      [2:0] aluop,
                         alucont <= 3'b010;    // jr only add
                         pcwritefromaluc <= 1; // pc write!
                      end
-                     6'b100101: alucont<= 3'b100 //or
+                     6'b100101: alucont<= 3'b100;  //or
                      default:   alucont <= 3'b101; // should never happen
                   endcase
          3'b001: alucont <= 3'b010; // add
@@ -408,7 +408,7 @@ module datapath #(parameter WIDTH = 32, REGBITS = 5)
 
    // shift left constant field by 2
    assign pcconstx4 = {pc[31:28],instr[WIDTH-7:0],2'b00};
-   assign constx4   = {{4{instr[WIDTH-7]}},instr[WIDTH-7:0],2'b00};
+   assign constx4   = {{14{instr[WIDTH-17]}},instr[WIDTH-17:0],2'b00};
 
    // register file address fields
    assign ra1 = instr[REGBITS+20:21];

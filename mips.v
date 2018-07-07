@@ -58,7 +58,7 @@ module exmemory #(parameter WIDTH = 32)
 
    initial
       begin
-         $readmemb("memfile.dat",RAM);
+         $readmemb("C:/Users/huqi1/Desktop/memfile.dat",RAM);
       end
 
    // read and write bytes from 32-bit word
@@ -80,16 +80,16 @@ module mips #(parameter WIDTH = 32, REGBITS = 5)
    wire [31:0] instr;
    wire        zero, alusrca, memtoreg, iord, pcen, regwrite;
    wire [1:0]  pcsource, alusrcb,regdst,memselect;
-   wire        irwrite, pcwritefromaluc;
+   wire        irwrite, pcwritefromaluc, opRtype;
    wire [2:0]  aluop, alucont;
    wire [WIDTH-1:0] writedatas;
 
    controller  cont(clk, reset, instr[31:26], zero, pcwritefromaluc, memread, memwrite, 
                     alusrca, memtoreg, iord, pcen, regwrite,
                     pcsource, alusrcb, aluop, regdst, irwrite, memselect);
-   alucontrol  ac(aluop, instr[5:0], alucont, pcwritefromaluc);
+   alucontrol  ac(aluop, instr[5:0], alucont, pcwritefromaluc, opRtype);
    datapath    #(WIDTH, REGBITS) 
-               dp(clk, reset, memdata, alusrca, memtoreg, iord, pcen,
+               dp(clk, reset, opRtype, memdata, alusrca, memtoreg, iord, pcen,
                   regwrite, pcsource, alusrcb, regdst, irwrite, alucont,
                   zero, instr, adr, writedatas);
    MMRselect   #(WIDTH) mms(writedatas,memselect,writedata);
@@ -101,7 +101,7 @@ module controller(input clk, reset,
                   input            pcwritefromaluc,
                   output reg       memread, memwrite, alusrca, memtoreg, iord, 
                   output           pcen, 
-                  output reg       regwrite, 
+                  output reg       regwrite,
                   output reg [1:0] pcsource, alusrcb, 
                   output reg [2:0] aluop, 
                   output reg [1:0] regdst,
@@ -131,7 +131,7 @@ module controller(input clk, reset,
    parameter   LUIWR   =  5'd21;
 
    //op code
-   parameter   LW      =  6'b100000;
+   parameter   LW      =  6'b100011;
    parameter   SB      =  6'b101000;
    parameter   RTYPE   =  6'b0;
    parameter   BEQ     =  6'b000100;
@@ -140,7 +140,7 @@ module controller(input clk, reset,
    parameter   ADDI    =  6'b001000;
    parameter   BNE     =  6'b000101;
    parameter   JAL     =  6'b000011;
-   parameter   LUI     =  6'b101111;
+   parameter   LUI     =  6'b001111;
    parameter   SH      =  6'b101001;
 
    reg [4:0] state, nextstate;
@@ -158,6 +158,8 @@ module controller(input clk, reset,
             FETCH:  nextstate <= DECODE;
             DECODE:  case(op)
                         SB:      nextstate <= MEMADR;
+                        LW:      nextstate <= MEMADR;
+                        SH:      nextstate <= MEMADR;
                         RTYPE:   nextstate <= RTYPEEX;
                         BEQ:     nextstate <= BEX;
                         BNE:     nextstate <= BEX;
@@ -179,6 +181,7 @@ module controller(input clk, reset,
                         BNE:    nextstate <= BNEEX;
                     endcase
             LWRD:    nextstate <= LWWR;
+            LWWR:    nextstate <= FETCH;
             SBWR:    nextstate <= FETCH;
             SHWR:    nextstate <= FETCH;
             RTYPEEX: nextstate <= RTYPEWR;
@@ -293,7 +296,7 @@ module controller(input clk, reset,
                    begin
                      //regdst   <= 0;   // regmux=0
                      regwrite   <= 1;
-                     memtoreg   <= 1;   // wdmux=1
+                     memtoreg   <= 0;   // wdmux=0
                    end
                ADDIEX:
                    begin
@@ -321,14 +324,14 @@ module controller(input clk, reset,
                      regwrite   <= 1;
                      //memtoreg <= 0;   // wdmux=0
                    end
-                LUIEX:
+               LUIEX:
                    begin
-                     alusrca  <= 1;     // src1mux=1
-                     aluop    <= 3'b110;// add
+                     alusrcb  <= 2;     // src2mux=2
+                     aluop    <= 3'b110;// <<<16
                    end
                LUIWR:
                    begin
-                     regdst     <= 1;   // regmux=1
+                     regdst     <= 0;   // regmux=0
                      regwrite   <= 1;
                      //memtoreg <= 0;   // wdmux=0
                    end
@@ -345,31 +348,36 @@ endmodule
 module alucontrol(input      [2:0] aluop, 
                   input      [5:0] funct, 
                   output reg [2:0] alucont,
-                  output reg pcwritefromaluc);
+                  output reg pcwritefromaluc, opRtype);
 
    always @(*)
     begin
       pcwritefromaluc <= 0; // pc not write!
+      opRtype <= 0;
       case(aluop)
-         3'b000: case(funct)       // R-Type instructions
-                     6'b100000: alucont <= 3'b010; // add (for add)
-                     6'b100010: alucont <= 3'b110; // subtract (for sub)
-                     6'b000000: alucont <= 3'b001; // sll
-                     6'b000010: alucont <= 3'b011; // srl
-                     6'b001000: 
-                     begin 
-                        alucont <= 3'b010;    // jr only add
-                        pcwritefromaluc <= 1; // pc write!
-                     end
-                     6'b100101: alucont<= 3'b100;  //or
-                     default:   alucont <= 3'b101; // should never happen
-                  endcase
-         3'b001: alucont <= 3'b010; // add
-         3'b010: alucont <= 3'b110; // sub
-         3'b011: alucont <= 3'b000; // and
-         3'b100: alucont <= 3'b001; // sll
-         3'b101: alucont <= 3'b011; // srl
-         3'b110: alucont <= 3'b111; // <<<16
+         3'b000: 
+         begin
+          opRtype <= 1;
+          case(funct)       // R-Type instructions
+              6'b100000: alucont <= 3'b010; // add (for add)
+              6'b100010: alucont <= 3'b110; // subtract (for sub)
+              6'b000000: alucont <= 3'b001; // sll
+              6'b000010: alucont <= 3'b011; // srl
+              6'b001000: 
+              begin 
+                  alucont <= 3'b010;    // jr only add
+                  pcwritefromaluc <= 1; // pc write!
+              end
+              6'b100101: alucont<= 3'b100;  //or
+              default:   alucont <= 3'b101; // should never happen
+            endcase
+         end
+          3'b001: alucont <= 3'b010; // add
+          3'b010: alucont <= 3'b110; // sub
+          3'b011: alucont <= 3'b000; // and
+          3'b100: alucont <= 3'b001; // sll
+          3'b101: alucont <= 3'b011; // srl
+          3'b110: alucont <= 3'b111; // <<<16
       endcase
     end
 endmodule
@@ -388,7 +396,7 @@ module MMRselect #(parameter WIDTH = 32)
 endmodule
 
 module datapath #(parameter WIDTH = 32, REGBITS = 5)
-                 (input              clk, reset, 
+                 (input              clk, reset, opRtype,
                   input  [WIDTH-1:0] memdata, 
                   input              alusrca, memtoreg, iord, pcen, regwrite,
                   input  [1:0]       pcsource, alusrcb, regdst,
@@ -413,7 +421,8 @@ module datapath #(parameter WIDTH = 32, REGBITS = 5)
    // register file address fields
    assign ra1 = instr[REGBITS+20:21];
    assign ra2 = instr[REGBITS+15:16];
-   assign atomux = instr[10:6] + a;
+   assign atomux = opRtype?(instr[10:6] + a):a;
+
    mux4       #(REGBITS) regmux(instr[REGBITS+15:16], instr[REGBITS+10:11], 
                                 5'd31,CONST_ZERO,
                                 regdst, wa);
@@ -467,7 +476,7 @@ module alu #(parameter WIDTH = 32)
             3'b001: result <= b << a;   //sll
             3'b011: result <= b >> a;   //srl
             3'b100: result <= a | b;    //or
-            3'b111: result <= a << 16;
+            3'b111: result <= b << 16;
         endcase
 endmodule
 

@@ -1,19 +1,20 @@
 √add     0x00/6 rs/5 rt/5 rd/5 0/5       0x20/6   
-andi    0x0c/6 rs/5 rt/5 imme/16
+√andi    0x0c/6 rs/5 rt/5 imme/16
 √addi    0x08/6 rs/5 rt/5 imme/16
-addu    0x00/6 rs/5 rt/5 rd/5 0/5       0x21/6   *
-beq     0x04/6 rs/5 rt/5 offset/16
-bne     0x05/6 rs/5 rt/5 offset/16
+ addu    0x00/6 rs/5 rt/5 rd/5 0/5       0x21/6   *
+√beq     0x04/6 rs/5 rt/5 offset/16
+√bne     0x05/6 rs/5 rt/5 offset/16
 √j       0x02/6 target/26
 √jal     0x03/6 target/26
 √jr      0x00/6 rs/5 0/15                0x08/6
-lw      0x23/6 rs/5 rt/5 offset/16
-lui     0x0f/6 rs/5 rt/5 imme/16
-sll     0x00/6 0/5 rt/5 rd/5 shamt/5    0x00/6
-sub     0x00/6 rs/5 rt/5 rd/5 0/5       0x22/6
-srl     0x00/6 0/5 rt/5 rd/5 shamt/5    0x02/6
-sb      0x28/6 rs/5 rt/5 offset/16
-sh      0x29/6 rs/5 rt/5 offset/16
+√lw      0x23/6 rs/5 rt/5 offset/16
+√lui     0x0f/6 0/5 rt/5 imme/16
+√sll     0x00/6 0/5 rt/5 rd/5 shamt/5    0x00/6
+√sub     0x00/6 rs/5 rt/5 rd/5 0/5       0x22/6
+√srl     0x00/6 0/5 rt/5 rd/5 shamt/5    0x02/6
+√sb      0x28/6 rs/5 rt/5 offset/16
+√sh      0x29/6 rs/5 rt/5 offset/16
+√or      0x00/6 rs/5 rt/5 rd/5 0/5       0x25/6
 
 add
 FE  
@@ -145,11 +146,11 @@ lui
 FE
 ID
 EX
-    src1mux=1
+    src2mux=2
     ALUcout=<<<16
 WR 
     wdmux=0
-    regmux=1
+    regmux=0
     regwrite=1
 
 sll

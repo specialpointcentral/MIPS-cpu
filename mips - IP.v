@@ -1,75 +1,124 @@
-//-------------------------------------------------------
-//基于FPEG的SOC设计
-// mips.v
-// Model of subset of MIPS processor described
-// modified by spc
-// version: v2.1
-// Create time: 2018/07/06
-// Latest edit time: 2018/07/08
-//-------------------------------------------------------
+`timescale 1ns / 1ps
+//////////////////////////////////////////////////////////////////////////////////
+// Company: 
+// Engineer: 
+// 
+// Create Date: 2018/07/08 20:44:07
+// Design Name: 
+// Module Name: top
+// Project Name: 
+// Target Devices: 
+// Tool Versions: 
+// Description: 
+// 
+// Dependencies: 
+// 
+// Revision:
+// Revision 0.01 - File Created
+// Additional Comments:
+// 
+//////////////////////////////////////////////////////////////////////////////////
 
-// top level design for testing
-module top #(parameter WIDTH = 32, REGBITS = 5)();
-//WIDTH->数据宽度
-//REGBITS->寄存器寻址位数
-   reg                 clk;
-   reg                 reset;
-   wire                memread, memwrite;
-   wire    [1:0]       memselect;//0-字 1-半字 2-字节
-   wire    [WIDTH-1:0] adr, writedata;
-   wire    [WIDTH-1:0] memdata;
 
-   // instantiate devices to be tested
-   mips #(WIDTH,REGBITS) dut(clk, reset, memdata, memread, memwrite, adr, writedata, memselect);
-
-   // external memory for code and data
-   exmemory #(WIDTH) exmem(clk, memwrite, adr, writedata, memdata);
-
-   // initialize test
-   initial
-      begin
-         reset <= 1; # 22; reset <= 0;
-      end
-
-   // generate clock to sequence tests
-   always
-      begin
-         clk <= 1; # 5; clk <= 0; # 5;
-      end
-
-   always@(negedge clk)
-      begin
-         if(memwrite)
-            if(adr == 5 & writedata == 7)
-               $display("Simulation completely successful");
-            else $display("Simulation failed");
-      end
-endmodule
-
-// external memory accessed by MIPS
-module exmemory #(parameter WIDTH = 32)
-                 (clk, memwrite, adr, writedata, memdata);
-
-   input                  clk;
-   input                  memwrite;
-   input      [WIDTH-1:0] adr, writedata;
-   output reg [WIDTH-1:0] memdata;
-
-   reg  [31:0] RAM [31:0];
-   wire [31:0] word;
-
-   initial
-      begin
-         $readmemb("C:/Users/huqi1/Desktop/memfile.dat",RAM);
-      end
-
-   // read and write bytes from 32-bit word
-   always @(posedge clk)
-		if(memwrite)//写入--高电平有效
-			RAM[adr>>2] <= writedata;
-	assign word =RAM[adr>>2];
-	always @(*)
-		memdata <=word;
+module top #(parameter WIDTH = 32, REGBITS = 5)(
+    input clk,
+    input reset,
+    input btc,
+    output reg [3:0] AN,
+    output reg [7:0] C,
+    output reg [15:0] LD
+    );
+    wire                memread, memwrite;
+    wire    [WIDTH-1:0] RAMread, ROMread;
+    wire    [1:0]       memselect;//0-字 1-半字 2-字节
+    wire    [WIDTH-1:0] adr, writedata;
+    reg     [WIDTH-1:0] memdata;
+    
+    always@(*)
+        begin
+            case (adr[15:12])//地址单元高四位
+                4'h0: 
+                    begin
+                        memdata <= ROMread;
+                    end
+                4'h1:
+                    begin
+                        memdata <= RAMread;
+                    end
+                4'hf:   //外设I/O部分
+                    begin
+                        case(adr[11:0])
+                            12'hff1:
+                                begin
+                                    case(memselect)
+                                        2'd1:
+                                        if(memwrite)
+                                            LD[15:0] <= writedata[15:0];
+                                        2'd2:
+                                        if(memwrite)
+                                            LD[15:8] <= writedata[7:0];
+                                    endcase
+                                end
+                            12'hff0:
+                                begin
+                                    case(memselect)
+                                        2'd2:
+                                        if(memwrite)
+                                            LD[7:0] <= writedata[7:0];
+                                    endcase
+                                end
+                            12'hff9:
+                                begin
+                                    case(memselect)
+                                        2'd1:
+                                        if(memwrite)
+                                            begin
+                                            AN[3:0] <= writedata[11:8];
+                                            C[7:0]  <= writedata[7:0];
+                                            end
+                                        2'd2:
+                                        if(memwrite)
+                                            AN[3:0] <= writedata[3:0];
+                                    endcase
+                                end
+                            12'hff8:
+                                begin
+                                    case(memselect)
+                                        2'd2:
+                                        if(memwrite)
+                                            C[7:0] <= writedata[7:0];
+                                    endcase
+                                end
+                            12'hff4:
+                                begin
+                                    case(memselect)
+                                        2'd2:
+                                        if(memread)
+                                          memdata[31:0] <= {31'b0,btc};
+                                    endcase
+                                end
+                        endcase
+                    end
+            endcase
+        end
+    
+    ins_mem ROM (
+      .clka(clk),    // input wire clka
+      .ena(memread),      // input wire ena
+      .addra(adr[11:2]),  // input wire [9 : 0] addra
+      .douta(ROMread)  // output wire [31 : 0] douta
+    );
+    
+    dat_mem RAM (
+      .clka(clk),    // input wire clka
+      .ena(memread),      // input wire ena
+      .wea(memwrite),      // input wire [0 : 0] wea
+      .addra(adr[11:2]),  // input wire [9 : 0] addra
+      .dina(writedata),    // input wire [31 : 0] dina
+      .douta(RAMread)  // output wire [31 : 0] douta
+    );
+    
+    mips #(WIDTH,REGBITS) dut(clk, reset, memdata, memread, memwrite, adr, writedata, memselect);
 endmodule
 
 // simplified MIPS processor

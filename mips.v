@@ -130,6 +130,8 @@ module controller(input clk, reset,
    parameter   JALWR   =  5'd19;
    parameter   LUIEX   =  5'd20;
    parameter   LUIWR   =  5'd21;
+   parameter   ORIEX   =  5'd22;
+   parameter   ORIWR   =  5'd23;
 
    //op code
    parameter   LW      =  6'b100011;
@@ -143,6 +145,7 @@ module controller(input clk, reset,
    parameter   JAL     =  6'b000011;
    parameter   LUI     =  6'b001111;
    parameter   SH      =  6'b101001;
+   parameter   ORI     =  6'b001101;
 
    reg [4:0] state, nextstate;
    reg       pcwrite, pcwritecond, pcbnecond;
@@ -169,6 +172,7 @@ module controller(input clk, reset,
                         ADDI:    nextstate <= ADDIEX;
                         JAL:     nextstate <= JALEX;
                         J:       nextstate <= JEX;
+                        ORI:     nextstate <= ORIEX;
                         default: nextstate <= FETCH; // should never happen
                      endcase
             MEMADR:  case(op)
@@ -198,6 +202,8 @@ module controller(input clk, reset,
             LUIEX:   nextstate <= LUIWR;
             LUIWR:   nextstate <= FETCH;
             JEX:     nextstate <= FETCH;
+            ORIEX:   nextstate <= ORIWR;
+            ORIWR:   nextstate <= FETCH;
             default: nextstate <= FETCH; // should never happen
          endcase
       end
@@ -299,6 +305,18 @@ module controller(input clk, reset,
                      regwrite   <= 1;
                      memtoreg   <= 0;   // wdmux=0
                    end
+               ORIEX:
+                   begin
+                     alusrca  <= 1;     // src1mux=1
+                     alusrcb  <= 2;     // src2mux=2
+                     aluop    <= 3'b110;// or
+                   end
+               ORIWR:
+                   begin
+                     //regdst   <= 0;   // regmux=0
+                     regwrite   <= 1;
+                     memtoreg   <= 0;   // wdmux=0
+                   end
                ADDIEX:
                    begin
                      alusrca  <= 1;     // src1mux=1
@@ -328,7 +346,7 @@ module controller(input clk, reset,
                LUIEX:
                    begin
                      alusrcb  <= 2;     // src2mux=2
-                     aluop    <= 3'b110;// <<<16
+                     aluop    <= 3'b111;// <<<16
                    end
                LUIWR:
                    begin
@@ -378,7 +396,8 @@ module alucontrol(input      [2:0] aluop,
           3'b011: alucont <= 3'b000; // and
           3'b100: alucont <= 3'b001; // sll
           3'b101: alucont <= 3'b011; // srl
-          3'b110: alucont <= 3'b111; // <<<16
+          3'b110: alucont <= 3'b100; // or
+          3'b111: alucont <= 3'b111; // <<<16
       endcase
     end
 endmodule

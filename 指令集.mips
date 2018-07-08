@@ -15,6 +15,7 @@
 √sb      0x28/6 rs/5 rt/5 offset/16
 √sh      0x29/6 rs/5 rt/5 offset/16
 √or      0x00/6 rs/5 rt/5 rd/5 0/5       0x25/6
+√ori     0x0d/6 rs/5 rt/5 imme/16
 
 add
 FE  

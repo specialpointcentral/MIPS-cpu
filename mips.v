@@ -84,7 +84,7 @@ module mips #(parameter WIDTH = 32, REGBITS = 5)
    wire [1:0]  pcsource, alusrcb,regdst,memselect;
    wire        irwrite, pcwritefromaluc, opRtype;
    wire [2:0]  aluop, alucont;
-   wire [WIDTH-1:0] writedatas;
+   //wire [WIDTH-1:0] writedatas;
 
    controller  cont(clk, reset, instr[31:26], zero, pcwritefromaluc, memread, memwrite, 
                     alusrca, memtoreg, iord, pcen, regwrite,
@@ -93,8 +93,8 @@ module mips #(parameter WIDTH = 32, REGBITS = 5)
    datapath    #(WIDTH, REGBITS) 
                dp(clk, reset, opRtype, memdata, alusrca, memtoreg, iord, pcen,
                   regwrite, pcsource, alusrcb, regdst, irwrite, alucont,
-                  zero, instr, adr, writedatas);
-   MMRselect   #(WIDTH) mms(writedatas,memselect,writedata);
+                  zero, instr, adr, writedata);
+   //MMRselect   #(WIDTH) mms(writedatas,memselect,writedata);
 endmodule
 
 module controller(input clk, reset, 
@@ -403,6 +403,7 @@ module alucontrol(input      [2:0] aluop,
     end
 endmodule
 
+/*
 module MMRselect #(parameter WIDTH = 32)
                   (input [WIDTH-1:0]        memdata,
                    input [1:0]              select,
@@ -415,6 +416,7 @@ module MMRselect #(parameter WIDTH = 32)
          2'b10: writedata <= memdata & 'b1111_1111;
       endcase
 endmodule
+*/
 
 module datapath #(parameter WIDTH = 32, REGBITS = 5)
                  (input              clk, reset, opRtype,

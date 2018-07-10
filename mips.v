@@ -216,7 +216,7 @@ module controller(input clk, reset,
             pcwrite <= 0; pcwritecond <= 0;
             regwrite <= 0; regdst <= 2'b00;
             memread <= 0; memwrite <= 0;
-            alusrca <= 0; alusrcb <= 2'b00; aluop <= 3'b000;
+            alusrca <= 0; alusrcb <= 2'b00; aluop <= 3'b001;
             pcsource <= 2'b00;
             pcbnecond <= 0;//bne condition
             iord <= 0; memtoreg <= 0;memselect<=2'b00;
@@ -280,7 +280,7 @@ module controller(input clk, reset,
                   begin
                      alusrca     <= 2'b01;
                      //alusrcb   <= 0;      // src2mux=0
-                     aluop       <= 3'b001; // add
+                     aluop       <= 3'b010; // sub
                      pcwritecond <= 1;
                      //pcbnecond <= 0;      //bne condition
                      pcsource    <= 2'b01;  // pcmux=1
@@ -289,7 +289,7 @@ module controller(input clk, reset,
                   begin
                      alusrca     <= 2'b01;
                      //alusrcb   <= 0;      // src2mux=0
-                     aluop       <= 3'b001; // add
+                     aluop       <= 3'b010; // sub
                      pcwritecond <= 1;
                      pcbnecond   <= 1;      //bne condition
                      pcsource    <= 2'b01;  // pcmux=1

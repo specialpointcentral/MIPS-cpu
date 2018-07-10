@@ -211,7 +211,7 @@ WR
     adrmux=1
     mmrselect=1
 
-or 0x00/6 rs/5 rt/5 rd/5 0x00/5 0x25/6
+or
 FE
 ID
 EX

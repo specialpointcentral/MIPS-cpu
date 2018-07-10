@@ -33,6 +33,18 @@ module top #(parameter WIDTH = 32, REGBITS = 5)(
     wire    [1:0]       memselect;//0-字 1-半字 2-字节
     wire    [WIDTH-1:0] adr, writedata;
     reg     [WIDTH-1:0] memdata;
+    reg                 cpuclk, dum;
+
+    always@(posedge clk)
+        begin
+            if(dum == 1)
+                begin
+                    cpuclk <= ~cpuclk;
+                    dum <= 0;
+                end
+            else
+                dum <= 1;
+        end
     
     always@(*)
         begin
@@ -91,11 +103,8 @@ module top #(parameter WIDTH = 32, REGBITS = 5)(
                                 end
                             12'hff4:
                                 begin
-                                    case(memselect)
-                                        2'd2:
-                                        if(memread)
-                                          memdata[31:0] <= {31'b0,btc};
-                                    endcase
+                                    if(memread)
+                                        memdata[31:0] <= {31'b0,btc};
                                 end
                         endcase
                     end
@@ -118,7 +127,7 @@ module top #(parameter WIDTH = 32, REGBITS = 5)(
       .douta(RAMread)  // output wire [31 : 0] douta
     );
     
-    mips #(WIDTH,REGBITS) dut(clk, reset, memdata, memread, memwrite, adr, writedata, memselect);
+    mips #(WIDTH,REGBITS) dut(cpuclk, reset, memdata, memread, memwrite, adr, writedata, memselect);
 endmodule
 
 // simplified MIPS processor
@@ -265,7 +274,7 @@ module controller(input clk, reset,
             pcwrite <= 0; pcwritecond <= 0;
             regwrite <= 0; regdst <= 2'b00;
             memread <= 0; memwrite <= 0;
-            alusrca <= 0; alusrcb <= 2'b00; aluop <= 3'b000;
+            alusrca <= 0; alusrcb <= 2'b00; aluop <= 3'b001;
             pcsource <= 2'b00;
             pcbnecond <= 0;//bne condition
             iord <= 0; memtoreg <= 0;memselect<=2'b00;
@@ -329,7 +338,7 @@ module controller(input clk, reset,
                   begin
                      alusrca     <= 2'b01;
                      //alusrcb   <= 0;      // src2mux=0
-                     aluop       <= 3'b001; // add
+                     aluop       <= 3'b010; // sub
                      pcwritecond <= 1;
                      //pcbnecond <= 0;      //bne condition
                      pcsource    <= 2'b01;  // pcmux=1
@@ -338,7 +347,7 @@ module controller(input clk, reset,
                   begin
                      alusrca     <= 2'b01;
                      //alusrcb   <= 0;      // src2mux=0
-                     aluop       <= 3'b001; // add
+                     aluop       <= 3'b010; // sub
                      pcwritecond <= 1;
                      pcbnecond   <= 1;      //bne condition
                      pcsource    <= 2'b01;  // pcmux=1

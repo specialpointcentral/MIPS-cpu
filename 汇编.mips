@@ -31,9 +31,9 @@ begin:
     j		begin				# jump to begin, 重复执行
 #停止转动处理
 stop:###
-    addi	$s1, $zero, 1000	    # $s1 = $zero + 1000
-    addi	$s2, $zero, 1500		# $s2 = $zero + 1500
-    addi	$s3, $zero, 2000		# $s3 = $zero + 2000
+    addi	$t7, $zero, 10	    # $s1 = $zero + 1000
+    addi	$t8, $zero, 15		# $s2 = $zero + 1500
+    addi	$t9, $zero, 20		# $s3 = $zero + 2000
     stop_begin:
         jal		show				# jump to show and save position to $ra
         sll     $zero, $zero, 0     # NOP
@@ -51,13 +51,13 @@ stop:###
         
     stop_first:
         addi	$t0, $t0, 1		        # $t0 = $t0 + 1
-        addi	$s1, $s1, -1			# $s1 = $s1 + -1
+        addi	$t7, $t7, -1			# $s1 = $s1 + -1
     stop_second:
         addi	$t1, $t1, 1		        # $t1 = $t1 + 1
-        addi	$s2, $s2, -1			# $s2 = $s2 + -1
+        addi	$t8, $t8, -1			# $s2 = $s2 + -1
     stop_third:
         addi	$t2, $t2, 1		        # $t2 = $t2 + 1
-        addi	$s3, $s3, -1			# $s3 = $s3 + -1
+        addi	$t9, $t9, -1			# $s3 = $s3 + -1
         j		stop_begin				# jump to stop_begin
     stop_end:
         sll     $zero, $zero, 0         # NOP, 准备胜利处理
@@ -76,6 +76,7 @@ change:
     addi	$s1, $zero, 100			# $s1 = $zero + 100
     addi	$s2, $zero, 150			# $s2 = $zero + 150
     addi	$s3, $zero, 200			# $s3 = $zero + 200
+    addi	$s4, $zero, 7			# $s3 = $zero + 7
     change_begin:
         beq		$t0, $s1, change_first	# if $t0 == $s1 then change_first
         beq		$t1, $s2, change_second	# if $t1 == $s2 then change_second
@@ -86,16 +87,28 @@ change:
 
     change_first:
         sub		$t0, $t0, $t0		 # 清零
+        beq     $t3, $s4, first_zero
         addi	$t3, $t3, 1			 # $t3 = $t3 + 1
         j		change_begin		 # jump to change_begin
+        first_zero:
+            sub		$t3, $t3, $t3		 # 清零
+            j		change_begin		 # jump to change_begin
     change_second:
         sub		$t1, $t1, $t1		 # 清零
+        beq     $t4, $s4, second_zero
         addi	$t4, $t4, 1			 # $t4 = $t4 + 1
         j		change_begin		 # jump to change_begin
+        second_zero:
+            sub		$t4, $t4, $t4		 # 清零
+            j		change_begin		 # jump to change_begin
     change_third:
         sub		$t2, $t2, $t2		 # 清零
+        beq     $t5, $s4, third_zero
         addi	$t5, $t5, 1			 # $t5 = $t5 + 1
         j		change_begin		 # jump to change_begin
+        third_zero:
+            sub		$t5, $t5, $t5		 # 清零
+            j		change_begin		 # jump to change_begin
         
 #数码管显示处理
 show:
@@ -113,13 +126,13 @@ show:
         beq		$s1, $s4, show_select3	# if $s1 == $s4 then show_select3 s1-3b'0100
 
         show_select1:
-            add		$s3, $zero, $t0		# $s3 = $zero + $t0
+            add		$s3, $zero, $t3		# $s3 = $zero + $t3
             j		show_select_end		# jump to show_select3
         show_select2:
-            add		$s3, $zero, $t1		# $s3 = $zero + $t1
+            add		$s3, $zero, $t4		# $s3 = $zero + $t4
             j		show_select_end		# jump to show_select3
         show_select3:
-            add		$s3, $zero, $t2		# $s3 = $zero + $t2
+            add		$s3, $zero, $t5		# $s3 = $zero + $t5
         show_select_end:
                     
         # 选择段选信号
@@ -167,7 +180,7 @@ show:
 
     show_out:
         sb		$s2, 0xfff8($zero)	    # 写段选       
-        sb		$s1, 0xfff9($s1)	    # 写片选
+        sb		$s1, 0xfff9($zero)	    # 写片选
         bne		$s1, $s5, show_begin	# if $s1 != $s5 then show_begin
 
     show_end:
